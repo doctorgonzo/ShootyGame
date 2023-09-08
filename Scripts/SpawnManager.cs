@@ -34,10 +34,21 @@ public class SpawnManager : Singleton<SpawnManager>
 
         public void AddAllSpawnPoints()
         {
-            availableSpawnPoints.Clear();
-            foreach (var item in GameObject.FindGameObjectsWithTag("Spawner"))
+            if (availableSpawnPoints != null)
             {
-                availableSpawnPoints.Add(item);
+                availableSpawnPoints.Clear();
+                foreach (var item in GameObject.FindGameObjectsWithTag("Spawner"))
+                {
+                    availableSpawnPoints.Add(item);
+                }
+            }
+            else
+            {
+                availableSpawnPoints = new List<GameObject>();
+                foreach (var item in GameObject.FindGameObjectsWithTag("Spawner"))
+                {
+                    availableSpawnPoints.Add(item);
+                }
             }
         }
 
@@ -48,6 +59,8 @@ public class SpawnManager : Singleton<SpawnManager>
 
     public void SpawnTractorAtStart(GameObject tractorPrefab)
     {
+        shootScript.tractorPrefab = Resources.Load<GameObject>("Prefabs/Tractor");
+        tractorPrefab = shootScript.tractorPrefab;
         var sexyScript = tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
         if (SceneManager.GetActiveScene().buildIndex > 1)
         {
@@ -96,7 +109,7 @@ public class SpawnManager : Singleton<SpawnManager>
     public void SpawnAllRandom(List<GameObject> tempTargetsToSpawn)
         {
         shootScript = GameObject.FindWithTag("MainCamera").GetComponent<Shoot>();
-            for (int i = 0; i < tempTargetsToSpawn.Count; i++)
+                for (int i = 0; i < tempTargetsToSpawn.Count; i++)
                 {
                     var rando = Random.Range(0, availableSpawnPoints.Count - 1);
                     if (availableSpawnPoints.Count > 0)

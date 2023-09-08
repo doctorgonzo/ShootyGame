@@ -17,7 +17,6 @@ public class LevelManager : Singleton<LevelManager>
     [SerializeField]public TimerManager timerManager;
     [SerializeField] public SpawnManager spawnManager;
     [SerializeField]public SheThinksMyTractorsSexy sexyScript;
-    private MyCursor myCursorScript;
     [SerializeField] private AudioClip stageSelectMusic;
     [SerializeField] public AudioClip level1Music;
     [SerializeField] public AudioClip level2Music;
@@ -45,20 +44,16 @@ public class LevelManager : Singleton<LevelManager>
             observer = Observer.Observe.GetComponent<Observer>();
             shootScript = Camera.main.GetComponent<Shoot>();
             reloadBar = GameObject.Find("ReloadBar");
-            myCursorScript = Camera.main.GetComponent<MyCursor>();
             //instantiates a New Game Object with a timermanager component
             timerManager = TimerManager.Instance;
             spawnManager = SpawnManager.Instance;
+            shootScript.tractorPrefab = Resources.Load<GameObject>("Prefabs/Tractor");
             sexyScript = shootScript.tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
             audioSource = Camera.main.GetComponent<AudioSource>();
             //this line instantiates the AchievementsCanvas Object by making a clone of the prefab
             achPop = AchievementsPopUp.AchPops.GetComponent<AchievementsPopUp>();
-            vCam = Resources.Load("CM vcam2").GetComponent<CinemachineVirtualCamera>();
-            vCam.LookAt = myCursorScript.cursorDummy.transform;
-            vCam.GetComponent<CinCamClampExt>().refOrientation = myCursorScript.cursorDummy.transform;
-            uiShitScript.SetDifficulty();
         }
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(this);
     }
     void Start()
     {
@@ -71,7 +66,9 @@ public class LevelManager : Singleton<LevelManager>
             timerManager = TimerManager.Instance;
             spawnManager = SpawnManager.Instance;
             SceneManager.sceneLoaded += OnSceneLoaded;
+            vCam = GameObject.FindWithTag("vCam").GetComponent<CinemachineVirtualCamera>();
         }
+        DontDestroyOnLoad (this);
     }
     public virtual void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -85,12 +82,7 @@ public class LevelManager : Singleton<LevelManager>
             reloadBar = GameObject.FindGameObjectWithTag("ReloadBar");
             reloadBar.SetActive(true);
             started = true;
-            if (vCam != null)
-            {
-                vCam.LookAt = myCursorScript.cursorDummy.transform;
-                vCam.GetComponent<CinCamClampExt>().refOrientation = myCursorScript.cursorDummy.transform;
-                uiShitScript.SetDifficulty();
-            }
+            DontDestroyOnLoad(this);
         }
         if (SceneManager.GetActiveScene().buildIndex == 1)
         {
@@ -102,13 +94,6 @@ public class LevelManager : Singleton<LevelManager>
             started = true;
             stage1Loaded = false;
             stage2Loaded = false;
-            if (!GameObject.FindWithTag("vCam"))
-            {
-                DontDestroyOnLoad(Instantiate(vCam));
-                vCam.LookAt = myCursorScript.cursorDummy.transform;
-                vCam.GetComponent<CinCamClampExt>().refOrientation = myCursorScript.cursorDummy.transform;
-                uiShitScript.SetDifficulty();
-            }
         }
         audioSource = Camera.main.GetComponent<AudioSource>();
         HandleInitialLevelSetup();
@@ -131,6 +116,7 @@ public class LevelManager : Singleton<LevelManager>
                 audioSource.PlayOneShot(stageSelectMusic);
                 break;
             case 2:
+                shootScript.weaponNum = 0;
                 switch (timerManager.difficultyLevel)
                 {
                     case 0:
@@ -222,6 +208,7 @@ public class LevelManager : Singleton<LevelManager>
                 audioSource.PlayOneShot(level1Music);
                 break;
             case 3:
+                shootScript.weaponNum = 0;
                 switch (timerManager.difficultyLevel)
                 {
                     case 0:
@@ -317,7 +304,7 @@ public class LevelManager : Singleton<LevelManager>
                 ChonkSpawn2 = GameObject.Find("ChonkSpawn2");
                 ChonkSpawn3 = GameObject.Find("ChonkSpawn3");
                 shootScript.weaponNum = 1;
-                myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
+                //myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
                 switch (timerManager.difficultyLevel)
                 {
                     case 0:
@@ -398,7 +385,7 @@ public class LevelManager : Singleton<LevelManager>
                 ChonkSpawn2 = GameObject.Find("ChonkSpawn2");
                 ChonkSpawn3 = GameObject.Find("ChonkSpawn3");
                 shootScript.weaponNum = 1;
-                myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
+                //myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
                 switch (timerManager.difficultyLevel)
                 {
                     case 0:
@@ -548,8 +535,8 @@ public class LevelManager : Singleton<LevelManager>
                 ChonkSpawn1 = GameObject.Find("ChonkSpawn1");
                 ChonkSpawn2 = GameObject.Find("ChonkSpawn2");
                 ChonkSpawn3 = GameObject.Find("ChonkSpawn3");
-                shootScript.weaponNum = 1;
-                myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
+                shootScript.weaponNum = 2;
+                //myCursorScript.ChangeCursor(myCursorScript.weapon1CursorTex);
                 switch (timerManager.difficultyLevel)
                 {
                     case 0:
@@ -667,6 +654,120 @@ public class LevelManager : Singleton<LevelManager>
                 audioSource.Stop();
                 audioSource.PlayOneShot(level3Music);
                 break;
+            case 7:
+                shootScript.weaponNum = 0;
+                vCam.GetComponent<CinCamClampExt>().angleBounds.x = 15;
+                vCam.GetComponent<CinCamClampExt>().angleBounds.y = 60;
+                switch (timerManager.difficultyLevel)
+                {
+                    case 0:
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        spawnManager.AddAllSpawnPoints();
+                        spawnManager.SpawnTractorAtStart(shootScript.tractorPrefab);
+                        sexyScript = shootScript.tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
+                        sexyScript.MoveTractorToEnd();
+                        spawnManager.SpawnAllRandom(shootScript.targetsToSpawn);
+                        break;
+                    case 1:
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        spawnManager.AddAllSpawnPoints();
+                        spawnManager.SpawnTractorAtStart(shootScript.tractorPrefab);
+                        sexyScript = shootScript.tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
+                        sexyScript.MoveTractorToEnd();
+                        spawnManager.SpawnAllRandom(shootScript.targetsToSpawn);
+                        break;
+                    case 2:
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        spawnManager.AddAllSpawnPoints();
+                        spawnManager.SpawnTractorAtStart(shootScript.tractorPrefab);
+                        sexyScript = shootScript.tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
+                        sexyScript.MoveTractorToEnd();
+                        spawnManager.SpawnAllRandom(shootScript.targetsToSpawn);
+                        break;
+                    case 3:
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.haystackTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        shootScript.targetsToSpawn.Add(shootScript.archeryTarget);
+                        spawnManager.AddAllSpawnPoints();
+                        spawnManager.SpawnTractorAtStart(shootScript.tractorPrefab);
+                        sexyScript = shootScript.tractorPrefab.GetComponent<SheThinksMyTractorsSexy>();
+                        sexyScript.MoveTractorToEnd();
+                        spawnManager.SpawnAllRandom(shootScript.targetsToSpawn);
+                        break;
+                }
+                audioSource.Stop();
+                audioSource.PlayOneShot(level3Music);
+                break;
         }
     }
     void Update()
@@ -704,9 +805,10 @@ public class LevelManager : Singleton<LevelManager>
     }
     public void LoadNextLevel()
     {
-        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        int nextSceneIndex = currentSceneIndex + 1;
+        int currentSceneIndex = StatsManager.Instance.curSceneIndex;
+        int nextSceneIndex = StatsManager.Instance.nextSceneIndex;
         levelLoaded?.Invoke(nextSceneIndex);
+
         SceneManager.LoadScene(nextSceneIndex);
     }
     public void LoadStage(int stageIndex)
@@ -719,7 +821,7 @@ public class LevelManager : Singleton<LevelManager>
     }
     public void LoadStatsScreen()
     {
-        StatsManager.Instance.gameObject.SetActive(true);
+        //StatsManager.Instance.gameObject.SetActive(true);
             foreach (var item in StatsManager.Instance.gameObject.GetComponentsInChildren<Transform>(true))
             {
                 item.gameObject.SetActive(true);
@@ -729,11 +831,11 @@ public class LevelManager : Singleton<LevelManager>
     }
     public void Continue()
     {
-       
+        SceneManager.LoadScene(StatsManager.Instance.nextSceneIndex);
     }
     public void Replay()
     {
-       
+        SceneManager.LoadScene(StatsManager.Instance.curSceneIndex);
     }
 
 }

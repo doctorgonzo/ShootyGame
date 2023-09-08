@@ -14,7 +14,7 @@ public class ScoreManager : Singleton<ScoreManager>
     private new void Awake()
     {
         DontDestroyOnLoad(this);
-        if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+        if (SceneManager.GetActiveScene().buildIndex > 1)
         {
             scoreText = GameObject.Find("ScoreText").GetComponent<TMPro.TextMeshProUGUI>();
         }
@@ -28,7 +28,7 @@ public class ScoreManager : Singleton<ScoreManager>
     }
     void Update()
     {
-        if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+        if (SceneManager.GetActiveScene().buildIndex > 1)
         {
             scoreText.text = "Score: " + score.ToString();
         }

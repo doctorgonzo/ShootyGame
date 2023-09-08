@@ -5,7 +5,11 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-
+/// <summary>
+/// For the Shotgun : if at least one raycast hits a target, count it towards the streak/score. play only one sound for shotgun
+///
+/// 
+/// </summary>
 public class AchievementsPopUp : Singleton<AchievementsPopUp>
 {
     [SerializeField] UnityEngine.UI.Image AchievementPicture;
@@ -44,7 +48,6 @@ public class AchievementsPopUp : Singleton<AchievementsPopUp>
     {
         AchievementPicture = gameObject.GetComponentInChildren<UnityEngine.UI.Image>(true);    
         AchievementText = gameObject.GetComponentInChildren<TextMeshProUGUI>(true);
-        //AchievementPicture = Resources.Load("Tractor-15").GetComponent<Image>();
         AchievementText.text = "FUCKING TESTING";
     }
     void Start()

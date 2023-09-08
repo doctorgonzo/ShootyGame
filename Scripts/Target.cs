@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class Target : MonoBehaviour
 {
@@ -14,6 +13,8 @@ public class Target : MonoBehaviour
     public List<GameObject> availableSpawnPoints;
     public SpawnManager spawnManager;
     public Shoot shootScript;
+    private Quaternion prevRotation;
+    private Quaternion newRotation;
 
 
     void Awake()
@@ -21,7 +22,7 @@ public class Target : MonoBehaviour
         prefab = this.gameObject;
         health = 100;
         lives = 2;
-        spawnManager = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<SpawnManager>();
+        spawnManager = SpawnManager.Instance.GetComponent<SpawnManager>();
         shootScript = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Shoot>();
         levelManager = LevelManager.Instance.GetComponent<LevelManager>();
     }
@@ -73,7 +74,20 @@ public class Target : MonoBehaviour
         shootScript.actualActiveTargetCount--;
         if (shootScript.actualActiveTargetCount <= 1)
         {
+            //levelManager.LoadNextLevel();
             levelManager.LoadStatsScreen();
+        }
+        switch (gameObject.name)
+        {
+            case "ArcheryTarget(Clone)":
+                shootScript.archDestroyed++;
+                break;
+            case "HayBale(Clone)":
+                shootScript.hayDestroyed++;
+                break;
+            case "ChonkyTarget(Clone)":
+                shootScript.chungusDestroyed++;
+                break;
         }
     }
 
@@ -88,8 +102,7 @@ public class Target : MonoBehaviour
         }
         if (spawnManager.availableSpawnPoints.Count > 0)
         {
-            prefab.transform.position = spawnManager.availableSpawnPoints[rando].transform.position;
-            prefab.transform.rotation = spawnManager.availableSpawnPoints[rando].transform.rotation;
+            prefab.transform.parent = spawnManager.availableSpawnPoints[rando].transform;
             prefab.GetComponent<Target>().spawnPoint = spawnManager.availableSpawnPoints[rando];
             spawnManager.RemoveAvailableSpawnPoint(prefab.GetComponent<Target>().spawnPoint);
             prefab.GetComponent<Target>().health = 100;
@@ -103,5 +116,19 @@ public class Target : MonoBehaviour
         {
             Debug.Log("NO SPAWNS");
         }
+        switch (gameObject.name)
+        {
+            case "ArcheryTarget(Clone)":
+                shootScript.archDestroyed++;
+                break;
+            case "HayBale(Clone)":
+                shootScript.hayDestroyed++;
+                break;
+            case "ChonkyTarget(Clone)":
+                shootScript.chungusDestroyed++;
+                break;
+        }
+
+
     }
 }

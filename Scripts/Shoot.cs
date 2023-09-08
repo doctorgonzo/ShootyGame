@@ -7,7 +7,7 @@ using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 using System;
 using Unity.VisualScripting;
-
+using Unity.Mathematics;
 public class Shoot : MonoBehaviour
 {
 	#region ClassLevelVariables
@@ -56,35 +56,48 @@ public class Shoot : MonoBehaviour
 	public StreakStuff streakNumberScript;
 	public Target targetScript;
 	public SheThinksMyTractorsSexy sexyScript;
-	[SerializeField] TimerManager timerManager;
+	[SerializeField] public TimerManager timerManager;
 	private AudioSource noisePlayer;
+	public int levelNum = 0;
 	public int ammoCountSingle=8;
 	public int ammoCountAuto=30;
-	public int ammoCountShotgun = 12;
+	public int ammoCountShotgun = 80;
 	public int fullAmmoSingle=8;
 	public int fullAmmoAuto=30;
 	public int fullAmmoShotgun = 12;
 	public int amountOfProjectiles = 8;
     public Image reloadBar;
-	public int weaponNum = 0;
-	private float reloadTimer = 1.33f;
-	private float shotsFired;
-	private float shotsHit;
-	private float shotsMissed;
-	private float accuracy;
+    public int weaponNum = 0;
+    private float reloadTimer = 1.33f;
+    #region Statistics
+    public int shotsFired;
+	public int shotsHit;
+	public int shotsMissed;
+	public float accuracy;
 	public float fireRate =8f;
-	public float autoFireRate = 12f;
 	public float nextTimeToFire = 0f;
 	private float shotTimer = 0.0f;
-	private float timeBetweenShots = 0.0f;
-	private float averageShotTime = 0.0f;
+	public float timeBetweenShots = 0.0f;
+	public float averageShotTime = 0.0f;
 	private float averageTime = 0.0f;
-	private int timesReloaded = 0;
+	public int timesReloaded = 0;
 	private int streakAmount;
 	private int streakCounter = 0;
-	private int bullseyeCounter = 0;
-	private int targetsDestroyedCount = 0;
-	public int activeTargetsCount = 0;
+	private int bullseyeStreakCounter = 0;
+	public int singleShotBullseyes = 0;
+	public int autoBullseyes = 0;
+	public int shotgunBullseyes = 0;
+	public int totalBullseyes = 0;
+	public int targetsDestroyedCount = 0;
+	public int highestStreak = 0;
+    public int prevHighestStreak = 0;
+    public int archDestroyed = 0;
+	public int hayDestroyed = 0;
+	public int chungusDestroyed = 0;
+	public int tractorDestroyed = 0;
+	public float totalTime = 0.0f;
+    #endregion
+    public int activeTargetsCount = 0;
 	public int actualActiveTargetCount = 0;
 	public int tractorCount = 1;
 	public int targetCount = 1;
@@ -93,16 +106,14 @@ public class Shoot : MonoBehaviour
 	private bool fiftyShotsFired = false;
 	private bool tenShotsHit = false;
 	private bool reloadDone = false;
+	private bool shotShotgun = false;
 	public int damageOutput;
-	private int weapon0Dmg = 50;
-	private int weapon1Dmg = 25;
-	private int weapon2Dmg= 15;
-	private int currentWeaponDmg;
+	private int shotgunDamageOutput;
 	private GameObject hitObject;
 	public List<GameObject> targetsToSpawn = new List<GameObject>();
 	private List<float> shotTimes = new List<float>();
 	public GameObject tractorPrefab;
-	private ScoreManager scoreManager;
+	public ScoreManager scoreManager;
     #region Actions
     public event Action ReloadHappened;
 	public event Action FiftyShotsFired;
@@ -111,7 +122,8 @@ public class Shoot : MonoBehaviour
     #endregion
     private void OnLevelWasLoaded(int level)
 	{
-		if (SceneManager.GetActiveScene().buildIndex > 0 && GameObject.FindGameObjectWithTag("ReloadBar") != null && SceneManager.GetActiveScene().name != "Stats")
+        tractorPrefab = Resources.Load<GameObject>("/Prefabs/Tractor");
+        if (SceneManager.GetActiveScene().buildIndex > 0 && GameObject.FindGameObjectWithTag("ReloadBar") != null)
 		{
 			reloadBar = GameObject.FindGameObjectWithTag("ReloadBar").GetComponent<UnityEngine.UI.Image>();
 			if (reloadBar != null)
@@ -119,13 +131,34 @@ public class Shoot : MonoBehaviour
 				reloadBar.fillAmount = 1f;
 			}
 		}
-		if (SceneManager.GetActiveScene().buildIndex > 0 && SceneManager.GetActiveScene().name != "Stats")
+		if (SceneManager.GetActiveScene().buildIndex > 0)
 		{
 			scoreManager = ScoreManager.Instance;
 		}
-        if (SceneManager.GetActiveScene().buildIndex == 4)
+		if (SceneManager.GetActiveScene().buildIndex == 4)
 		{
 			weaponNum = 1;
+		}
+		switch (SceneManager.GetActiveScene().buildIndex)
+		{
+			case 2:
+				levelNum = 0;
+				break;
+			case 3:
+				levelNum = 1;
+				break;
+				case 4:
+				levelNum = 2;
+				break;
+			case 5:
+				levelNum = 3;
+				break;
+			case 6:
+				levelNum = 4;
+				break;
+			case 7:
+				levelNum = 5;
+				break;
 		}
 	}
     GameObject FindInActiveObjectByTag(string tag)
@@ -146,13 +179,13 @@ public class Shoot : MonoBehaviour
     }
     private void Awake()
     {
-		scoreManager = ScoreManager.Instance;
-		autoFireRate = 10f;
-		if (GameObject.FindGameObjectWithTag("ReloadBar"))
-		{
-			reloadBar = GameObject.FindGameObjectWithTag("ReloadBar").GetComponent<Image>();
-		}
-	}
+		//scoreManager = ScoreManager.Instance;
+		//timerManager = TimerManager.Instance;
+        tractorPrefab = Resources.Load<GameObject>("/Prefabs/Tractor");
+		amountOfProjectiles = 8;
+		fullAmmoShotgun = 80;
+		ammoCountShotgun = 80;
+    }
     void Start()
 	{
 		shotsFired = 0;
@@ -161,6 +194,7 @@ public class Shoot : MonoBehaviour
 		accuracy = 0;
 		streakAmount = 0;
 		damageOutput = 50;
+		shotgunDamageOutput = 20;
 		shotTimer = 0.0f;
 		timeBetweenShots = 0.0f;
 		averageShotTime = 0.0f;
@@ -168,18 +202,12 @@ public class Shoot : MonoBehaviour
 		timesReloaded= 0;
 		reloadTimer = 1.33f;
 		noisePlayer = GetComponent<AudioSource>();
-        if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+		tractorPrefab = Resources.Load<GameObject>("/Prefabs/Tractor");
+        if (SceneManager.GetActiveScene().buildIndex > 1)
 		{
-			timerManager = GameObject.Find("New Game Object").GetComponent<TimerManager>();
-		}
-		if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
-		{
-			scoreManager = GameObject.Find("New Game Object").GetComponent<ScoreManager>();
-		}
-		if (GameObject.FindGameObjectWithTag("ReloadBar"))
-		{
-			reloadBar = GameObject.FindGameObjectWithTag("ReloadBar").GetComponent<Image>();
-		}
+			timerManager = GameObject.Find("TimerManager").GetComponent<TimerManager>();
+            scoreManager = GameObject.Find("ScoreManager").GetComponent<ScoreManager>();
+        }
 	}
 	void FigureAverageShotTime()
 	{
@@ -193,24 +221,19 @@ public class Shoot : MonoBehaviour
 	}
 	void Update()
 	{
-        if (SceneManager.GetActiveScene().buildIndex > 0 && SceneManager.GetActiveScene().name != "Stats")
-        {
-			switch (weaponNum)
-			{
-				case 0:
-					currentWeaponDmg = weapon0Dmg;
-					damageOutput = currentWeaponDmg;
-					break;
-					case 1:
-					currentWeaponDmg = weapon1Dmg;
-					damageOutput = currentWeaponDmg;
-					break;
-				case 2:
-					currentWeaponDmg= weapon2Dmg;
-					damageOutput = currentWeaponDmg;
-					break;
-			}
-			if (shotsFired == 50 && fiftyShotsFired == false)
+		totalBullseyes = singleShotBullseyes + autoBullseyes + shotgunBullseyes;
+		totalTime += Time.deltaTime;
+		if (prevHighestStreak > highestStreak)
+		{
+			highestStreak = prevHighestStreak;
+		}
+		else if (prevHighestStreak < highestStreak)
+		{
+			highestStreak = streakAmount;
+		}
+		if (SceneManager.GetActiveScene().buildIndex > 0)
+		{
+            if (shotsFired == 50 && fiftyShotsFired == false)
             {
                 FiftyShotsFired?.Invoke();
                 fiftyShotsFired = true;
@@ -235,7 +258,7 @@ public class Shoot : MonoBehaviour
             reloadBar.transform.position = new Vector3(Input.mousePosition.x, Input.mousePosition.y - 43, Input.mousePosition.z);
             if (fillBar == true)
             {
-                Debug.Log("FILLBAR");
+                //Debug.Log("FILLBAR");
                 reloadBar.transform.position = new Vector3(Input.mousePosition.x, Input.mousePosition.y - 43, Input.mousePosition.z);
                 reloadBar.fillAmount += 1f / reloadTimer * Time.deltaTime;
             }
@@ -254,12 +277,12 @@ public class Shoot : MonoBehaviour
             if (streakAmount > 0)
             {
                 streakNumberScript.SetStreakNumber(streakAmount);
-                streakNumberScript.gameObject.SetActive(true);
+				streakNumberScript.gameObject.GetComponent<TMPro.TextMeshProUGUI>().enabled = true;
             }
-            if (streakAmount == 0)
+            if (streakAmount == 0 && streakNumberScript != null && streakNameScript != null)
             {
-                streakNameScript.gameObject.SetActive(false);
-                streakNumberScript.gameObject.SetActive(false);
+				streakNameScript.gameObject.GetComponent<TMPro.TextMeshProUGUI>().enabled = false;
+				streakNumberScript.gameObject.GetComponent<TMPro.TextMeshProUGUI>().enabled = false;
             }
             if (streakAmount > 2)
             {
@@ -348,53 +371,65 @@ public class Shoot : MonoBehaviour
             #endregion
             if (shotsFired > 0)
             {
-                accuracy = shotsHit / shotsFired;
+                accuracy = (float)shotsHit / (float)shotsFired;
             }
-            bullseyeStreakText.GetComponent<TMPro.TextMeshProUGUI>().text = "Consecutive Bullseyes: " + bullseyeCounter.ToString();
-            targetsDestroyedText.GetComponent<TMPro.TextMeshProUGUI>().text = "Targets Destroyed: " + targetsDestroyedCount.ToString();
-            shotsFiredText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Fired: " + shotsFired.ToString();
-            shotsHitText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Hit: " + shotsHit.ToString();
-            shotsMissedText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Missed: " + shotsMissed.ToString();
-            accuracyText.GetComponent<TMPro.TextMeshProUGUI>().text = "Accuracy: " + accuracy.ToString("P");
-            activeTargetsText.GetComponent<TMPro.TextMeshProUGUI>().text = "Active Targets: " + activeTargetsCount.ToString();
-            if (Input.GetMouseButton(0) && weaponNum == 1 && Time.time >= nextTimeToFire && ammoCountAuto > 0)
-            {
-                nextTimeToFire = Time.time + 1f / autoFireRate;
-                ShootAutomatic();
-                reloadBar.fillAmount -= 1f / fullAmmoAuto;
+			if (bullseyeStreakText != null && targetsDestroyedText != null && shotsFiredText != null && shotsHitText != null && shotsMissedText != null && accuracyText != null && activeTargetsText != null)
+			{
+                bullseyeStreakText.GetComponent<TMPro.TextMeshProUGUI>().text = "Consecutive Bullseyes: " + bullseyeStreakCounter.ToString();
+                targetsDestroyedText.GetComponent<TMPro.TextMeshProUGUI>().text = "Targets Destroyed: " + targetsDestroyedCount.ToString();
+                shotsFiredText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Fired: " + shotsFired.ToString();
+                shotsHitText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Hit: " + shotsHit.ToString();
+                shotsMissedText.GetComponent<TMPro.TextMeshProUGUI>().text = "Shots Missed: " + shotsMissed.ToString();
+                accuracyText.GetComponent<TMPro.TextMeshProUGUI>().text = "Accuracy: " + accuracy.ToString("P");
+				activeTargetsText.GetComponent<TMPro.TextMeshProUGUI>().text = "Active Targets: " + activeTargetsCount.ToString();
+				//activeTargetsText.GetComponent<TMPro.TextMeshProUGUI>().text = "Active Targets: " + actualActiveTargetCount.ToString();
             }
-            if (Input.GetMouseButtonDown(0) && ammoCountSingle > 0 && weaponNum == 0)
-            {
-                ShootSingle();
-                reloadBar.fillAmount -= 1f / fullAmmoSingle;
-                if (ammoCountSingle == 0)
+			if (SceneManager.GetActiveScene().name != "Stats")
+			{
+                if (Input.GetMouseButton(0) && weaponNum == 1 && Time.time >= nextTimeToFire && ammoCountAuto > 0)
+                {
+                    nextTimeToFire = Time.time + 1f / fireRate;
+                    ShootAutomatic();
+                    reloadBar.fillAmount -= 1f / fullAmmoAuto;
+                }
+                if (Input.GetMouseButtonDown(0) && ammoCountSingle > 0 && weaponNum == 0)
+                {
+                    ShootSingle();
+                    reloadBar.fillAmount -= 1f / fullAmmoSingle;
+                    if (ammoCountSingle == 0)
+                    {
+                        noisePlayer.PlayOneShot(emptyGunSound);
+                    }
+                }
+                if (Input.GetMouseButtonDown(0) && weaponNum == 2 && ammoCountShotgun > 0)
+                {
+                    shotShotgun = false;
+                    for (int i = 0; i < amountOfProjectiles; i++)
+                    {
+                        ShootShotgun();
+                    }
+                    reloadBar.fillAmount -= 8f / fullAmmoShotgun;
+                }
+                if (Input.GetMouseButtonDown(0) && ammoCountSingle == 0 && weaponNum == 0)
                 {
                     noisePlayer.PlayOneShot(emptyGunSound);
                 }
-            }
-            if (Input.GetMouseButtonDown(0) && ammoCountSingle == 0 && weaponNum == 0)
-            {
-                noisePlayer.PlayOneShot(emptyGunSound);
-            }
-            if (Input.GetMouseButtonDown(0) && ammoCountAuto == 0 && weaponNum == 1)
-            {
-                noisePlayer.PlayOneShot(emptyGunSound);
-            }
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                if (fillBar == false)
+                if (Input.GetKeyDown(KeyCode.R))
                 {
-                    reloadDone = false;
-                    //fillBar = true;
-                    reloadBar.fillAmount = 0;
-                    StartCoroutine(Reload());
+                    if (fillBar == false)
+                    {
+                        reloadDone = false;
+                        reloadBar.fillAmount = 0;
+                        StartCoroutine(Reload());
+                    }
                 }
             }
+            
         }
-       
 	}
 	IEnumerator Reload()
 	{
+		timesReloaded++;
 		ammoCountSingle = 0;
 		ammoCountAuto = 0;
 		noisePlayer.PlayOneShot(reloadSound);
@@ -407,6 +442,7 @@ public class Shoot : MonoBehaviour
 			fillBar = false;
 			ammoCountAuto = fullAmmoAuto;
 			ammoCountSingle = fullAmmoSingle;
+			ammoCountShotgun = fullAmmoShotgun;
 		}
     }
 	public void ShootSingle()
@@ -424,7 +460,8 @@ public class Shoot : MonoBehaviour
 		{
 			if (hit.collider.isTrigger)
 			{
-				bullseyeCounter++;
+				bullseyeStreakCounter++;
+				singleShotBullseyes++;
 				if (scoreManager != null)
 				{
 					scoreManager.IncreaseScore(80);
@@ -442,8 +479,8 @@ public class Shoot : MonoBehaviour
 			}
 			else
 			{
-				damageOutput = currentWeaponDmg;
-				bullseyeCounter = 0;
+				damageOutput = 50;
+				bullseyeStreakCounter = 0;
 			}
 			if (hit.collider.gameObject.tag == "Enemy") //hit something tagged as an Enemy
 			{
@@ -567,9 +604,14 @@ public class Shoot : MonoBehaviour
 					scoreManager.DecreaseScore(50);
 				}
 				shotsMissed++;
-				streakAmount = 0;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                //    highestStreak = prevHighestStreak;
+                //}
+                streakAmount = 0;
 				streakCounter = 0;
-				bullseyeCounter = 0;
+				bullseyeStreakCounter = 0;
 				playParticles = false;
 			}
 			else //hit anything that wasn't an enemy or its chonks (probably the wall for now)
@@ -586,9 +628,14 @@ public class Shoot : MonoBehaviour
 					}
 				}
 				shotsMissed++;
-				streakAmount = 0;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                //    highestStreak = prevHighestStreak;
+                //}
+                streakAmount = 0;
 				streakCounter = 0;
-				bullseyeCounter = 0;
+				bullseyeStreakCounter = 0;
 				playParticles = false;
 			}
 			Debug.DrawRay(-Camera.main.transform.position, ray.direction * 200, Color.green, 10f, false);
@@ -605,9 +652,14 @@ public class Shoot : MonoBehaviour
 				}
 			}
 			shotsMissed++;
-			streakAmount = 0;
+			prevHighestStreak = streakAmount;
+            //if (prevHighestStreak > highestStreak)
+            //{
+                //highestStreak = prevHighestStreak;
+            //}
+            streakAmount = 0;
 			streakCounter = 0;
-			bullseyeCounter = 0;
+			bullseyeStreakCounter = 0;
 			playParticles = false;
 		}
 	}
@@ -626,7 +678,8 @@ public class Shoot : MonoBehaviour
 		{
 			if (hit.collider.isTrigger)
 			{
-				bullseyeCounter++;
+				bullseyeStreakCounter++;
+				autoBullseyes++;
 				if (scoreManager != null)
 				{
 					scoreManager.IncreaseScore(80);
@@ -644,8 +697,8 @@ public class Shoot : MonoBehaviour
 			}
 			else
 			{
-				damageOutput = currentWeaponDmg;
-				bullseyeCounter = 0;
+				damageOutput = 50;
+				bullseyeStreakCounter = 0;
 			}
 			if (hit.collider.gameObject.tag == "Enemy") //hit something tagged as an Enemy
 			{
@@ -769,9 +822,14 @@ public class Shoot : MonoBehaviour
 					scoreManager.DecreaseScore(50);
 				}
 				shotsMissed++;
-				streakAmount = 0;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                    //highestStreak = prevHighestStreak;
+                //}
+                streakAmount = 0;
 				streakCounter = 0;
-				bullseyeCounter = 0;
+				bullseyeStreakCounter = 0;
 				playParticles = false;
 			}
 			else //hit anything that wasn't an enemy or its chonks (probably the wall for now)
@@ -788,9 +846,14 @@ public class Shoot : MonoBehaviour
 					}
 				}
 				shotsMissed++;
-				streakAmount = 0;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                    //highestStreak = prevHighestStreak;
+                //}
+                streakAmount = 0;
 				streakCounter = 0;
-				bullseyeCounter = 0;
+				bullseyeStreakCounter = 0;
 				playParticles = false;
 			}
 			Debug.DrawRay(-Camera.main.transform.position, ray.direction * 200, Color.green, 10f, false);
@@ -807,34 +870,49 @@ public class Shoot : MonoBehaviour
 				}
 			}
 			shotsMissed++;
-			streakAmount = 0;
+			prevHighestStreak = streakAmount;
+            //if (prevHighestStreak > highestStreak)
+            //{
+                //highestStreak = prevHighestStreak;
+            //}
+            streakAmount = 0;
 			streakCounter = 0;
-			bullseyeCounter = 0;
+			bullseyeStreakCounter = 0;
 			playParticles = false;
 		}
 	}
-
 	public void ShootShotgun()
 	{
-        shotsFired++;
         ammoCountShotgun--;
-        shotTimer = Time.timeSinceLevelLoad;
-        shotTimes.Add(timeBetweenShots);
-        timeBetweenShotsText.GetComponent<TMPro.TextMeshProUGUI>().text = "Time Between Shots: " + timeBetweenShots.ToString("F3");
-        FigureAverageShotTime();
+      
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        noisePlayer.PlayOneShot(gunFiredSound);
-        if (Physics.Raycast(ray, out hit))
+		Vector3 direction = ray.direction;
+		Vector3 spread = Vector3.zero;
+		spread +=  Camera.main.transform.forward * UnityEngine.Random.Range(-1f, 1f);
+		spread += Camera.main.transform.right * UnityEngine.Random.Range(-0.4f, 0.4f);
+		direction += spread.normalized * UnityEngine.Random.Range(0f, 0.2f);
+		if (shotShotgun == false)
+		{
+            shotsFired++;
+            shotTimer = Time.timeSinceLevelLoad;
+            shotTimes.Add(timeBetweenShots);
+            timeBetweenShotsText.GetComponent<TMPro.TextMeshProUGUI>().text = "Time Between Shots: " + timeBetweenShots.ToString("F3");
+            FigureAverageShotTime();
+            noisePlayer.PlayOneShot(gunFiredSound);
+			shotShotgun = true;
+        }
+        if (Physics.Raycast(ray.origin, direction, out hit))
         {
             if (hit.collider.isTrigger)
             {
-                bullseyeCounter++;
+                bullseyeStreakCounter++;
+				shotgunBullseyes++;
                 if (scoreManager != null)
                 {
                     scoreManager.IncreaseScore(80);
                 }
-                damageOutput *= 2;
+                shotgunDamageOutput *= 2;
                 if (streakAmount >= 0)
                 {
                     if (streakAmount % 3 - 2 == 0)
@@ -847,8 +925,8 @@ public class Shoot : MonoBehaviour
             }
             else
             {
-                damageOutput = currentWeaponDmg;
-                bullseyeCounter = 0;
+                shotgunDamageOutput = 20;
+                bullseyeStreakCounter = 0;
             }
             if (hit.collider.gameObject.tag == "Enemy") //hit something tagged as an Enemy
             {
@@ -873,10 +951,10 @@ public class Shoot : MonoBehaviour
                 //get the target script of the Enemy that you hit.
                 targetScript = hitObject.GetComponent<Target>();
                 //if the Enemy you hit has no health, he explodes.fuck you, michael bay.
-                if (targetScript.health - damageOutput <= 0)
+                if (targetScript.health - shotgunDamageOutput <= 0)
                 {
                     targetsDestroyedCount++;
-                    targetScript.TakeDamge(damageOutput);
+                    targetScript.TakeDamge(shotgunDamageOutput);
                     var newGibs = Instantiate(gibs, hit.point, Quaternion.identity);
                     var gibsMat = hit.collider.gameObject.GetComponent<MeshRenderer>().material;
                     if (hitObject.transform.parent != null && hitObject.transform.parent.name == "TractorCompoundColliders")
@@ -900,7 +978,7 @@ public class Shoot : MonoBehaviour
                 }
                 else
                 {
-                    targetScript.TakeDamge(damageOutput);
+                    targetScript.TakeDamge(shotgunDamageOutput);
                 }
             }
             #region Tractor Handling
@@ -925,7 +1003,7 @@ public class Shoot : MonoBehaviour
                 hitObject = hit.collider.gameObject.transform.parent.gameObject;
                 sexyScript = hitObject.GetComponentInParent<SheThinksMyTractorsSexy>();
                 //if the Enemy you hit has no health, he explodes.fuck you, michael bay.
-                if (sexyScript.health - damageOutput <= 0)
+                if (sexyScript.health - shotgunDamageOutput <= 0)
                 {
                     foreach (var item in GameObject.FindGameObjectsWithTag("BulletHit"))
                     {
@@ -935,7 +1013,7 @@ public class Shoot : MonoBehaviour
                         }
                     }
                     targetsDestroyedCount++;
-                    sexyScript.TakeDamge(damageOutput);
+                    sexyScript.TakeDamge(shotgunDamageOutput);
                     var newGibs = Instantiate(gibs, hit.point, Quaternion.identity);
                     var gibsMat = sexyScript.gameObject.GetComponent<MeshRenderer>().material;
                     foreach (var item in newGibs.GetComponentsInChildren<MeshFilter>())
@@ -952,7 +1030,7 @@ public class Shoot : MonoBehaviour
                 }
                 else
                 {
-                    sexyScript.TakeDamge(damageOutput);
+                    sexyScript.TakeDamge(shotgunDamageOutput);
                     if (randoFlip == 1 && scoreManager != null)
                     {
                         scoreManager.IncreaseScore(four);
@@ -972,9 +1050,14 @@ public class Shoot : MonoBehaviour
                     scoreManager.DecreaseScore(50);
                 }
                 shotsMissed++;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                    //highestStreak = prevHighestStreak;
+                //}
                 streakAmount = 0;
                 streakCounter = 0;
-                bullseyeCounter = 0;
+                bullseyeStreakCounter = 0;
                 playParticles = false;
             }
             else //hit anything that wasn't an enemy or its chonks (probably the wall for now)
@@ -991,9 +1074,14 @@ public class Shoot : MonoBehaviour
                     }
                 }
                 shotsMissed++;
+				prevHighestStreak = streakAmount;
+                //if (prevHighestStreak > highestStreak)
+                //{
+                    //highestStreak = prevHighestStreak;
+                //}
                 streakAmount = 0;
                 streakCounter = 0;
-                bullseyeCounter = 0;
+                bullseyeStreakCounter = 0;
                 playParticles = false;
             }
             Debug.DrawRay(-Camera.main.transform.position, ray.direction * 200, Color.green, 10f, false);
@@ -1009,10 +1097,16 @@ public class Shoot : MonoBehaviour
                     scoreManager.DecreaseScore(50);
                 }
             }
+            Debug.DrawRay(-Camera.main.transform.position, ray.direction * 200, Color.green, 10f, false);
             shotsMissed++;
+			prevHighestStreak = streakAmount;
+            //if (prevHighestStreak > highestStreak)
+            //{
+                //highestStreak = prevHighestStreak;
+            //}
             streakAmount = 0;
             streakCounter = 0;
-            bullseyeCounter = 0;
+            bullseyeStreakCounter = 0;
             playParticles = false;
         }
     }

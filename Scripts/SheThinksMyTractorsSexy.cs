@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
+
     public class SheThinksMyTractorsSexy : MonoBehaviour
     {
     public int lives;
@@ -22,11 +24,8 @@ using UnityEngine.SceneManagement;
     void Awake()
     {
         tractorPrefab = this.gameObject;
-        //health = 420;
         startingHealth = health;
-        //lives = 2;
         startingLives = lives;
-        //speed = 9.66f;
         startingSpeed = speed;
         shootScript = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Shoot>();
         spawnManager = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<SpawnManager>();
@@ -34,15 +33,18 @@ using UnityEngine.SceneManagement;
         endSpawnPoint = GameObject.FindGameObjectWithTag("TractorEnd");
         if (SceneManager.GetActiveScene().buildIndex > 1)
         {
-            scoreManager = GameObject.Find("New Game Object").GetComponent<ScoreManager>();
+            scoreManager = GameObject.Find("ScoreManager").GetComponent<ScoreManager>();
         }
     }
-
+    private void OnLevelWasLoaded(int level)
+    {
+        tractorPrefab = gameObject;
+    }
     void Update()
     {
         if (SceneManager.GetActiveScene().buildIndex > 1)
         {
-            scoreManager = GameObject.Find("New Game Object").GetComponent<ScoreManager>();
+            scoreManager = GameObject.Find("ScoreManager").GetComponent<ScoreManager>();
         }
         switch (tractorSpawnCount)
         {
@@ -75,7 +77,6 @@ using UnityEngine.SceneManagement;
     public void MoveTractorToEnd()
     {
         tractorPrefab = this.gameObject;
-        //speed = 9.66f;
         startSpawnPoint = GameObject.FindGameObjectWithTag("TractorStart");
         endSpawnPoint = GameObject.FindGameObjectWithTag("TractorEnd");
         tractorSpawnCount = 1;
@@ -100,7 +101,7 @@ using UnityEngine.SceneManagement;
             {
                 gameObject.SetActive(false);
                 shootScript.activeTargetsCount--;
-                Invoke("Respawn", Random.Range(0.33f, 3.333f));
+                Invoke("Respawn", UnityEngine.Random.Range(0.33f, 3.333f));
             }
             else
             {
@@ -117,6 +118,7 @@ using UnityEngine.SceneManagement;
     {
         Destroy(this.gameObject);
         shootScript.activeTargetsCount--;
+        shootScript.tractorDestroyed++;
     }
 
     public void Respawn()
@@ -126,6 +128,7 @@ using UnityEngine.SceneManagement;
         tractorPrefab.transform.position = endSpawnPoint.transform.position;
         tractorPrefab.transform.rotation = endSpawnPoint.transform.rotation;
         health = startingHealth;
+        shootScript.tractorDestroyed++;
         MoveTractorToStart();
     }
 }

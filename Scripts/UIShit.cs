@@ -44,7 +44,7 @@ public class UIShit : Singleton<UIShit>
     [SerializeField] UnityEngine.UI.Button saveButton;
     [SerializeField] UnityEngine.UI.Button escQuitButton;
     [SerializeField] AudioSource audioSource;
-    [SerializeField] CinemachineVirtualCamera vcam;
+    [SerializeField] public CinemachineVirtualCamera vcam;
     [SerializeField] Transform[] allOptionsObjects;
     [SerializeField] int startingDifficulty = 2;
     [SerializeField] float startingVolume = 0.5f;
@@ -55,8 +55,6 @@ public class UIShit : Singleton<UIShit>
     public Shoot shootScript;
     private new void Awake()
     {
-        //how about we do this. in our main scripts' Awake methods, we first always check to see what Scene# we're in. If it's Scene 0 (the startup screen)
-        //or Scene 1 (the stage select screen), then we don't load the shit that breaks those scenes.
         if (SceneManager.GetActiveScene().buildIndex > 0)
         {
             shootScript = Camera.main.GetComponent<Shoot>();
@@ -124,14 +122,10 @@ public class UIShit : Singleton<UIShit>
                 optionsButton.gameObject.SetActive(true);
                 quitButton.gameObject.SetActive(true);
             }
-            if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+            if (SceneManager.GetActiveScene().buildIndex > 0 && SceneManager.GetActiveScene().name != "Stats")
             {
-                //vcam = GameObject.Find("CM vcam2").GetComponent<CinemachineVirtualCamera>();
                 vcam = GameObject.FindGameObjectWithTag("vCam").GetComponent<CinemachineVirtualCamera>();
-                vcam.GetComponent<CinCamClampExt>().refOrientation = GameObject.Find("dummyCursor").transform;
-                vcam.LookAt = GameObject.Find("dummyCursor").transform;
                 SetDifficulty();
-                DontDestroyOnLoad(vcam);
             }
             if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
             {
@@ -219,14 +213,9 @@ public class UIShit : Singleton<UIShit>
                     break;
             }
         }
-        if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+        if (SceneManager.GetActiveScene().buildIndex > 0 && SceneManager.GetActiveScene().name != "Stats")
         {
-            //vcam = GameObject.Find("CM vcam2").GetComponent<CinemachineVirtualCamera>();
             vcam = GameObject.FindGameObjectWithTag("vCam").GetComponent<CinemachineVirtualCamera>();
-            vcam.GetComponent<CinCamClampExt>().refOrientation = GameObject.Find("dummyCursor").transform;
-            vcam.LookAt = GameObject.Find("dummyCursor").transform;
-            SetDifficulty();
-            DontDestroyOnLoad(vcam);
         }
         if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
         {
@@ -245,6 +234,7 @@ public class UIShit : Singleton<UIShit>
         volumeSlider.value = startingVolume;
         musicVolumeSlider.value = musicStartingVolume;
         graphicsDropdown.value = startingGraphics;
+        SetDifficulty();
         HideEscMenu();
         SetVolume();
     }
@@ -292,8 +282,16 @@ public class UIShit : Singleton<UIShit>
 
     public void SetDifficulty()
     {
-        if (vcam != null)
+        //vcam = vCam;
+        if (vcam.isActiveAndEnabled == false)
         {
+            vcam.gameObject.SetActive(true);
+            vcam.enabled = true;
+        }
+       if (vcam != null)
+        {
+            vcam.GetComponent<CinCamClampExt>().refOrientation = GameObject.Find("dummyCursor(Clone)").transform;
+            vcam.LookAt = GameObject.Find("dummyCursor(Clone)").transform;
             switch (difficultyDropdown.value)
             {
                 case 0:
@@ -397,6 +395,7 @@ public class UIShit : Singleton<UIShit>
     public void StartButton()
     {
         SceneManager.LoadScene("StageSelect");
+        StatsManager.Instance.gameObject.SetActive(true);
         uiBackground.SetActive(false);
         HideStartMenu();
     }

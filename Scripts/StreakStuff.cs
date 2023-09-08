@@ -20,11 +20,13 @@ public class StreakStuff : MonoBehaviour
 
     public void SetStreakNumber(int number)
     {
+        streakNumber = GameObject.Find("StreakNumber").GetComponent<TMPro.TextMeshProUGUI>();
         streakNumber.text = "x " + number.ToString();
     }
 
     public void SetStreakText(string streakName)
     {
+        streakText = GameObject.Find("StreakName").GetComponent<TMPro.TextMeshProUGUI>();
         streakText.text = streakName;
     }
 }

@@ -26,19 +26,23 @@ public class TimerManager : Singleton<TimerManager>
                 timeLeft = 30.00f;
                 break;
         }
+        if (SceneManager.GetActiveScene().buildIndex > 1)
+        {
+            timerText = GameObject.Find("TimerText").GetComponent<TMPro.TextMeshProUGUI>();
+        }
+        spawnManager = GameObject.Find("Main Camera").GetComponent<SpawnManager>();
+        DontDestroyOnLoad(this);
+    }
+    private void OnLevelWasLoaded(int level)
+    {
         if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
         {
             timerText = GameObject.Find("TimerText").GetComponent<TMPro.TextMeshProUGUI>();
         }
-        if (SceneManager.GetActiveScene().name != "Stats")
-        {
-            spawnManager = GameObject.Find("Main Camera").GetComponent<SpawnManager>();
-        }
     }
-
     void Update()
     {
-        if (SceneManager.GetActiveScene().buildIndex > 1 && SceneManager.GetActiveScene().name != "Stats")
+        if (SceneManager.GetActiveScene().buildIndex > 1)
         {
             timeLeft -= Time.deltaTime;
             timerText.text = "Time Remaining: " + timeLeft.ToString("F2");
